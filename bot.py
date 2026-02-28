@@ -22,24 +22,24 @@ def telegram_bot():
             clickid = urlparse.parse_qs(parsed.query).get('clickid', [None])[0]
 
             if clickid:
-                send_tg(chat_id, f"✅ Started! ClickID: {clickid}. Wait 12 mins.")
+                send_tg(chat_id, f"✅ Received! Waiting 4 minutes... then I will run all 3 steps instantly.")
                 
-                # Step 1
-                time.sleep(240)
+                # --- ONLY ONE WAIT (4 MINUTES) ---
+                time.sleep(240) 
+
+                # --- STEP 1: ClickID Only (Instant) ---
                 requests.post("http://akshit-bro.in/adcounty.php?i=2", data={'clickid': clickid, 'goal': ''})
-                send_tg(chat_id, "Step 1 Done")
-
-                # Step 2
-                time.sleep(240)
+                
+                # --- STEP 2: Goal 1 (Instant) ---
                 requests.post("http://akshit-bro.in/adcounty.php?i=2", data={'clickid': clickid, 'goal': 'ds_purchase_success_screen_load'})
-                send_tg(chat_id, "Step 2 Done")
-
-                # Step 3
-                time.sleep(240)
+                
+                # --- STEP 3: Goal 2 (Instant) ---
                 requests.post("http://akshit-bro.in/adcounty.php?i=2", data={'clickid': clickid, 'goal': 'dg_purchase_success_screen_load'})
-                send_tg(chat_id, "🏁 Finished!")
+
+                send_tg(chat_id, "🏁 All 3 steps completed instantly after the 4-minute wait!")
 
     return "OK", 200
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
+    
