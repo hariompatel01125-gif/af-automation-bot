@@ -11,31 +11,43 @@ def send_tg(chat_id, text):
     requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage?chat_id={chat_id}&text={text}")
 
 def background_task(chat_id, clickid):
-    # --- STEP 1: The mandatory 4-minute wait ---
+    # --- Step 1: Mandatory 4-minute wait ---
     time.sleep(240) 
     
     target_url = "http://akshit-bro.in/adcounty.php?i=2"
-    # Headers make the bot look like the Chrome browser in your video
+    
+    # Advanced Headers to bypass bot detection
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Origin': 'http://akshit-bro.in',
+        'Referer': 'http://akshit-bro.in/',
         'Content-Type': 'application/x-www-form-urlencoded'
     }
 
+    goals = ['', 'ds_purchase_success_screen_load', 'dg_purchase_success_screen_load']
+    
     try:
-        # Action 1: ClickID + Empty Goal (Initial Trigger)
-        requests.post(target_url, data={'clickid': clickid, 'goal': ''}, headers=headers, timeout=15)
-        time.sleep(5) # 5 second gap to mimic manual typing
+        session = requests.Session() # Using a session to keep cookies if any
         
-        # Action 2: ClickID + Purchase Goal 1
-        requests.post(target_url, data={'clickid': clickid, 'goal': 'ds_purchase_success_screen_load'}, headers=headers, timeout=15)
-        time.sleep(5) # 5 second gap
+        for i, goal in enumerate(goals):
+            payload = {'clickid': clickid, 'goal': goal}
+            response = session.post(target_url, data=payload, headers=headers, timeout=20)
+            
+            # Debugging: check if the server actually said "success"
+            if "success" in response.text.lower():
+                print(f"Goal {i} sent successfully")
+            else:
+                print(f"Goal {i} response: {response.text}")
+                
+            time.sleep(7) # 7-second gap between steps to ensure server processes each
+
+        send_tg(chat_id, f"✅ Process Fully Executed!\nID: `{clickid}`\nCheck your task dashboard now.")
         
-        # Action 3: ClickID + Purchase Goal 2
-        requests.post(target_url, data={'clickid': clickid, 'goal': 'dg_purchase_success_screen_load'}, headers=headers, timeout=15)
-        
-        send_tg(chat_id, f"✅ Process Complete!\nID: `{clickid}`\nAll 3 goals executed exactly like the manual script.")
     except Exception as e:
-        send_tg(chat_id, f"❌ Execution Error: {str(e)}")
+        send_tg(chat_id, f"❌ Technical Error: {str(e)}")
 
 @app.route('/', methods=['POST'])
 def telegram_bot():
@@ -44,13 +56,12 @@ def telegram_bot():
         chat_id = data["message"]["chat"]["id"]
         msg_text = data["message"].get("text", "")
         
-        # Auto-extract ClickID from Appsflyer link
         if "clickid=" in msg_text:
             parsed = urlparse.urlparse(msg_text)
             clickid = urlparse.parse_qs(parsed.query).get('clickid', [None])[0]
 
             if clickid:
-                send_tg(chat_id, f"🔎 ClickID Detected: `{clickid}`\n⏳ Timer started. Running all steps in 4 minutes...")
+                send_tg(chat_id, f"🔎 ClickID: `{clickid}`\n⏳ Bot is mimicking your phone... wait 4 minutes.")
                 threading.Thread(target=background_task, args=(chat_id, clickid)).start()
 
     return "OK", 200
